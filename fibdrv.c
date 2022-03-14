@@ -17,13 +17,49 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 92
+#define MAX_LENGTH 100
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
+#define BIGN
+#ifdef BIGN
+typedef struct BigN {
+    unsigned long long upper, lower;
+} u128;
+
+#define P10_UINT64 10000000000000000000ULL
+static u128 fib_sequence_u128(long long k)
+{
+    if (k <= 1LL) {
+        u128 ret = {.upper = 0, .lower = (unsigned long long) k};
+        return ret;
+    }
+
+    u128 a, b, c;
+    a.upper = 0;
+    a.lower = 0;
+    b.upper = 0;
+    b.lower = 1;
+
+
+    for (int i = 2; i <= k; i++) {
+        c.lower = a.lower + b.lower;
+        c.upper = a.upper + b.upper;
+        // if lower overflows or lower >= 10^9, add a carry to upper
+        if ((c.lower < a.lower) || (c.lower >= P10_UINT64)) {
+            c.lower -= P10_UINT64;
+            c.upper += 1;
+        }
+        a = b;
+        b = c;
+    }
+
+    return c;
+}
+#else
 static long long fib_sequence(long long k)
 {
     /* FIXME: C99 variable-length array (VLA) is not allowed in Linux kernel. */
@@ -38,6 +74,7 @@ static long long fib_sequence(long long k)
 
     return f[k];
 }
+#endif
 
 static int fib_open(struct inode *inode, struct file *file)
 {
@@ -60,7 +97,13 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
+#ifdef BIGN
+    u128 fib = fib_sequence_u128(*offset);
+    copy_to_user(buf, &fib, sizeof(fib));
+    return sizeof(fib);
+#else
     return (ssize_t) fib_sequence(*offset);
+#endif
 }
 
 /* write operation is skipped */

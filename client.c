@@ -7,11 +7,31 @@
 
 #define FIB_DEV "/dev/fibonacci"
 
+typedef struct BigN {
+    unsigned long long upper, lower;
+} u128;
+
+void print_fib_u128(int i, u128 *fib)
+{
+    if (fib->upper) {
+        printf("Reading from " FIB_DEV
+               " at offset %d, returned the sequence "
+               "%llu%019llu.\n",
+               i, fib->upper, fib->lower);
+    } else {
+        printf("Reading from " FIB_DEV
+               " at offset %d, returned the sequence "
+               "%llu.\n",
+               i, fib->lower);
+    }
+}
+
+#define BIGN
 int main()
 {
     long long sz;
 
-    char buf[1];
+    char buf[sizeof(u128)];
     char write_buf[] = "testing writing";
     int offset = 100; /* TODO: try test something bigger than the limit */
 
@@ -28,20 +48,28 @@ int main()
 
     for (int i = 0; i <= offset; i++) {
         lseek(fd, i, SEEK_SET);
-        sz = read(fd, buf, 1);
+        sz = read(fd, buf, sizeof(u128));
+#ifdef BIGN
+        print_fib_u128(i, (u128 *) buf);
+#else
         printf("Reading from " FIB_DEV
                " at offset %d, returned the sequence "
                "%lld.\n",
                i, sz);
+#endif
     }
 
     for (int i = offset; i >= 0; i--) {
         lseek(fd, i, SEEK_SET);
-        sz = read(fd, buf, 1);
+        sz = read(fd, buf, sizeof(u128));
+#ifdef BIGN
+        print_fib_u128(i, (u128 *) buf);
+#else
         printf("Reading from " FIB_DEV
                " at offset %d, returned the sequence "
                "%lld.\n",
                i, sz);
+#endif
     }
 
     close(fd);
