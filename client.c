@@ -7,6 +7,9 @@
 
 #define FIB_DEV "/dev/fibonacci"
 
+#define BIGN
+
+#ifdef BIGN
 typedef struct BigN {
     unsigned long long upper, lower;
 } u128;
@@ -25,8 +28,8 @@ void print_fib_u128(int i, u128 *fib)
                i, fib->lower);
     }
 }
+#endif
 
-#define BIGN
 int main()
 {
     long long sz;
