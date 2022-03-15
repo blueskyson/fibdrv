@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
+#include <linux/string.h>
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -17,7 +18,7 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 184
+#define MAX_LENGTH 1093
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
@@ -26,38 +27,68 @@ static DEFINE_MUTEX(fib_mutex);
 
 #define BIGN
 #ifdef BIGN
+
+#define BIGNSIZE 12
+
 typedef struct BigN {
-    unsigned long long upper, lower;
-} u128;
+    unsigned long long cell[BIGNSIZE];
+} ubig;
+
+#define init_ubig(x) for (int i = 0; i < BIGNSIZE; x.cell[i++] = 0)
 
 #define P10_UINT64 10000000000000000000ULL
-static u128 fib_sequence_u128(long long k)
+static ubig fib_sequence_ubig(long long k)
 {
     if (k <= 1LL) {
-        u128 ret = {.upper = 0, .lower = (unsigned long long) k};
+        ubig ret;
+        init_ubig(ret);
+        ret.cell[0] = (unsigned long long) k;
         return ret;
     }
 
-    u128 a, b, c;
-    a.upper = 0;
-    a.lower = 0;
-    b.upper = 0;
-    b.lower = 1;
-
+    ubig a, b, c;
+    init_ubig(a);
+    init_ubig(b);
+    b.cell[0] = 1;
 
     for (int i = 2; i <= k; i++) {
-        c.lower = a.lower + b.lower;
-        c.upper = a.upper + b.upper;
-        // if lower overflows or lower >= 10^9, add a carry to upper
-        if ((c.lower < a.lower) || (c.lower >= P10_UINT64)) {
-            c.lower -= P10_UINT64;
-            c.upper += 1;
+        for (int j = 0; j < BIGNSIZE; j++)
+            c.cell[j] = a.cell[j] + b.cell[j];
+
+        for (int j = 0; j < BIGNSIZE - 1; j++) {
+            // if lower overflows or lower >= 10^9, add a carry to upper
+            if ((c.cell[j] < a.cell[j]) || (c.cell[j] >= P10_UINT64)) {
+                c.cell[j] -= P10_UINT64;
+                c.cell[j + 1] += 1;
+            }
         }
+
         a = b;
         b = c;
     }
 
     return c;
+}
+
+size_t ubig_to_string(char *buf, size_t bufsize, const ubig *a)
+{
+    int index = BIGNSIZE - 1;
+    while (!a->cell[index])
+        index--;
+    if (index == -1) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return (size_t) 1;
+    }
+
+    char buf2[22];
+    snprintf(buf2, bufsize, "%llu", a->cell[index--]);
+    strcat(buf, buf2);
+    while (index >= 0) {
+        snprintf(buf2, bufsize, "%019llu", a->cell[index--]);
+        strcat(buf, buf2);
+    }
+    return strlen(buf);
 }
 #else
 static long long fib_sequence(long long k)
@@ -98,9 +129,13 @@ static ssize_t fib_read(struct file *file,
                         loff_t *offset)
 {
 #ifdef BIGN
-    u128 fib = fib_sequence_u128(*offset);
-    copy_to_user(buf, &fib, sizeof(fib));
-    return sizeof(fib);
+#define BUFFSIZE 500
+    char fibbuf[BUFFSIZE] = "";
+    ubig fib = fib_sequence_ubig(*offset);
+    size_t len = ubig_to_string(fibbuf, BUFFSIZE, &fib);
+    len = (size > len) ? (len + 1) : size;
+    copy_to_user(buf, fibbuf, len);
+    return (ssize_t) len;
 #else
     return (ssize_t) fib_sequence(*offset);
 #endif
