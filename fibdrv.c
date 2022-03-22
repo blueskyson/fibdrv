@@ -27,8 +27,8 @@ static DEFINE_MUTEX(fib_mutex);
 
 /* replace unsigned long long with struct BigN */
 #define BIGN
-#define BIGN_ADDING
-//#define BIGN_FAST_DOUBLING
+//#define BIGN_ADDING
+#define BIGN_FAST_DOUBLING
 #define BIGNSIZE 12
 #define BUFFSIZE 500
 
@@ -145,7 +145,7 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
         return;
 
     for (int i = index; i >= 0; i--) {
-        int bit_index = (index << 6) + 63;
+        int bit_index = (i << 6) + 63;
         for (unsigned long long mask = 0x8000000000000000ULL; mask;
              mask >>= 1) {
             if (b->cell[i] & mask) {
