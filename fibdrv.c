@@ -4,6 +4,7 @@
 #include <linux/init.h>
 #include <linux/kdev_t.h>
 #include <linux/kernel.h>
+#include <linux/ktime.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
@@ -46,6 +47,7 @@ static inline void init_ubig(ubig *x)
 
 static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
 {
+    printk("hi");
     for (int i = 0; i < BIGNSIZE; i++)
         dest->cell[i] = a->cell[i] + b->cell[i];
 
@@ -233,11 +235,13 @@ static ssize_t fib_read(struct file *file,
                         loff_t *offset)
 {
 #ifdef BIGN
+    ktime_t t = ktime_get();
     char fibbuf[BUFFSIZE];
     ubig fib = fib_sequence_ubig(*offset);
     int __offset = ubig_to_string(fibbuf, BUFFSIZE, &fib);
     copy_to_user(buf, fibbuf + __offset, BUFFSIZE - __offset);
-    return (ssize_t) BUFFSIZE - __offset;
+    s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
+    return elapsed;
 #else
     return (ssize_t) fib_sequence(*offset);
 #endif
