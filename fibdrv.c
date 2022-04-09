@@ -8,6 +8,7 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/string.h>
+#include "ubig_1.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -27,69 +28,13 @@ static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
 /* replace unsigned long long with struct BigN */
-#define BIGN
-//#define BIGN_ADDING
-#define BIGN_FAST_DOUBLING
-#define BIGNSIZE 12
 #define BUFFSIZE 500
 
+#define ADDING
+// #define FAST_DOUBLING
 
-#ifdef BIGN
-typedef struct BigN {
-    unsigned long long cell[BIGNSIZE];
-} ubig;
-
-static inline void init_ubig(ubig *x)
-{
-    for (int i = 0; i < BIGNSIZE; x->cell[i++] = 0)
-        ;
-}
-
-static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
-{
-    printk("hi");
-    for (int i = 0; i < BIGNSIZE; i++)
-        dest->cell[i] = a->cell[i] + b->cell[i];
-
-    for (int i = 0; i < BIGNSIZE - 1; i++)
-        dest->cell[i + 1] += (dest->cell[i] < a->cell[i]);
-}
-
-int ubig_to_string(char *buf, size_t bufsize, ubig *a)
-{
-    memset(buf, '0', bufsize);
-    buf[bufsize - 1] = '\0';
-
-    int index = BIGNSIZE - 1;
-    while (!a->cell[index])
-        index--;
-    if (index == -1)
-        return bufsize - 2;
-
-    for (int i = index; i >= 0; i--) {
-        for (unsigned long long mask = 0x8000000000000000ULL; mask;
-             mask >>= 1) {
-            int carry = ((a->cell[i] & mask) != 0);
-            for (int j = bufsize - 2; j >= 0; j--) {
-                buf[j] += buf[j] - '0' + carry;
-                carry = (buf[j] > '9');
-                if (carry)
-                    buf[j] -= 10;
-            }
-        }
-    }
-
-    int offset = 0;
-    while (buf[offset] == '0')
-        offset++;
-    return (buf[offset] == '\0') ? (offset - 1) : offset;
-}
-#endif
-
-
-#ifdef BIGN_ADDING
-
-static ubig fib_sequence_ubig(long long k)
+#ifdef ADDING
+static ubig fib_sequence(long long k)
 {
     if (k <= 1LL) {
         ubig ret;
@@ -101,6 +46,8 @@ static ubig fib_sequence_ubig(long long k)
     ubig a, b, c;
     init_ubig(&a);
     init_ubig(&b);
+    init_ubig(&c);
+
     b.cell[0] = 1ULL;
 
     for (int i = 2; i <= k; i++) {
@@ -112,56 +59,8 @@ static ubig fib_sequence_ubig(long long k)
     return c;
 }
 
-#elif defined BIGN_FAST_DOUBLING
-
-static inline void ubig_sub(ubig *dest, ubig *a, ubig *b)
-{
-    for (int i = 0; i < BIGNSIZE; i++)
-        dest->cell[i] = a->cell[i] - b->cell[i];
-
-    for (int i = 0; i < BIGNSIZE - 1; i++)
-        dest->cell[i + 1] -= (dest->cell[i] > a->cell[i]);
-}
-
-static inline void ubig_lshift(ubig *dest, ubig *a, int x)
-{
-    // quotient and remainder of x being divided by 64
-    unsigned quotient = x >> 6, remainder = x & 0x3f;
-
-    init_ubig(dest);
-    for (int i = 0; i + quotient < BIGNSIZE; i++)
-        dest->cell[i + quotient] |= a->cell[i] << remainder;
-
-    if (remainder)
-        for (int i = 1; i + quotient < BIGNSIZE; i++)
-            dest->cell[i + quotient] |= a->cell[i - 1] >> (64 - remainder);
-}
-
-void ubig_mul(ubig *dest, ubig *a, ubig *b)
-{
-    init_ubig(dest);
-    int index = BIGNSIZE - 1;
-    while (!b->cell[index])
-        index--;
-    if (index == -1)
-        return;
-
-    for (int i = index; i >= 0; i--) {
-        int bit_index = (i << 6) + 63;
-        for (unsigned long long mask = 0x8000000000000000ULL; mask;
-             mask >>= 1) {
-            if (b->cell[i] & mask) {
-                ubig shift, tmp;
-                ubig_lshift(&shift, a, bit_index);
-                ubig_add(&tmp, dest, &shift);
-                *dest = tmp;
-            }
-            bit_index--;
-        }
-    }
-}
-
-static ubig fib_sequence_ubig(long long k)
+#elif defined FAST_DOUBLING
+static ubig fib_sequence(long long k)
 {
     if (k <= 1LL) {
         ubig ret;
@@ -195,22 +94,6 @@ static ubig fib_sequence_ubig(long long k)
 
     return a;
 }
-
-#else
-static long long fib_sequence(long long k)
-{
-    /* FIXME: C99 variable-length array (VLA) is not allowed in Linux kernel. */
-    long long f[k + 2];
-
-    f[0] = 0;
-    f[1] = 1;
-
-    for (int i = 2; i <= k; i++) {
-        f[i] = f[i - 1] + f[i - 2];
-    }
-
-    return f[k];
-}
 #endif
 
 static int fib_open(struct inode *inode, struct file *file)
@@ -234,17 +117,13 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-#ifdef BIGN
     ktime_t t = ktime_get();
     char fibbuf[BUFFSIZE];
-    ubig fib = fib_sequence_ubig(*offset);
+    ubig fib = fib_sequence(*offset);
     int __offset = ubig_to_string(fibbuf, BUFFSIZE, &fib);
     copy_to_user(buf, fibbuf + __offset, BUFFSIZE - __offset);
     s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
     return elapsed;
-#else
-    return (ssize_t) fib_sequence(*offset);
-#endif
 }
 
 /* write operation is skipped */
