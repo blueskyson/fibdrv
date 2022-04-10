@@ -1,3 +1,5 @@
+#include <linux/string.h>
+
 #define BIGNSIZE 12
 
 typedef struct BigN {
@@ -46,7 +48,7 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
 {
     init_ubig(dest);
     int index = BIGNSIZE - 1;
-    while (index > 0 && !b->cell[index])
+    while (index >= 0 && !b->cell[index])
         index--;
     if (index < 0)
         return;
@@ -95,3 +97,68 @@ int ubig_to_string(char *buf, size_t bufsize, ubig *a)
         offset++;
     return (buf[offset] == '\0') ? (offset - 1) : offset;
 }
+
+#define ADDING
+
+#ifdef ADDING
+static ubig fib_sequence(long long k)
+{
+    if (k <= 1LL) {
+        ubig ret;
+        init_ubig(&ret);
+        ret.cell[0] = (unsigned long long) k;
+        return ret;
+    }
+
+    ubig a, b, c;
+    init_ubig(&a);
+    init_ubig(&b);
+    init_ubig(&c);
+
+    b.cell[0] = 1ULL;
+
+    for (int i = 2; i <= k; i++) {
+        ubig_add(&c, &a, &b);
+        a = b;
+        b = c;
+    }
+
+    return c;
+}
+
+#elif defined FAST_DOUBLING
+static ubig fib_sequence(long long k)
+{
+    if (k <= 1LL) {
+        ubig ret;
+        init_ubig(&ret);
+        ret.cell[0] = (unsigned long long) k;
+        return ret;
+    }
+
+    ubig a, b;
+    init_ubig(&a);
+    init_ubig(&b);
+    b.cell[0] = 1ULL;
+
+    for (unsigned long long mask = 0x8000000000000000ULL >> __builtin_clzll(k);
+         mask; mask >>= 1) {
+        ubig tmp1, tmp2, t1, t2;
+        ubig_lshift(&tmp1, &b, 1);   // tmp1 = 2*b
+        ubig_sub(&tmp2, &tmp1, &a);  // tmp2 = 2*b - a
+        ubig_mul(&t1, &a, &tmp2);    // t1 = a*(2*b - a)
+
+        ubig_mul(&tmp1, &a, &a);      // tmp1 = a^2
+        ubig_mul(&tmp2, &b, &b);      // tmp2 = b^2
+        ubig_add(&t2, &tmp1, &tmp2);  // t2 = a^2 + b^2
+
+        a = t1, b = t2;
+        if (k & mask) {
+            ubig_add(&t1, &a, &b);  // t1 = a + b
+            a = b, b = t1;
+        }
+    }
+
+    return a;
+}
+#endif

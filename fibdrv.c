@@ -7,8 +7,7 @@
 #include <linux/ktime.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#include <linux/string.h>
-#include "ubig_1.h"
+#include "ubig_2.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -20,7 +19,7 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 1093
+#define MAX_LENGTH 188795
 
 static dev_t fib_dev = 0;
 static struct cdev *fib_cdev;
@@ -28,73 +27,7 @@ static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
 /* replace unsigned long long with struct BigN */
-#define BUFFSIZE 500
-
-#define ADDING
-// #define FAST_DOUBLING
-
-#ifdef ADDING
-static ubig fib_sequence(long long k)
-{
-    if (k <= 1LL) {
-        ubig ret;
-        init_ubig(&ret);
-        ret.cell[0] = (unsigned long long) k;
-        return ret;
-    }
-
-    ubig a, b, c;
-    init_ubig(&a);
-    init_ubig(&b);
-    init_ubig(&c);
-
-    b.cell[0] = 1ULL;
-
-    for (int i = 2; i <= k; i++) {
-        ubig_add(&c, &a, &b);
-        a = b;
-        b = c;
-    }
-
-    return c;
-}
-
-#elif defined FAST_DOUBLING
-static ubig fib_sequence(long long k)
-{
-    if (k <= 1LL) {
-        ubig ret;
-        init_ubig(&ret);
-        ret.cell[0] = (unsigned long long) k;
-        return ret;
-    }
-
-    ubig a, b;
-    init_ubig(&a);
-    init_ubig(&b);
-    b.cell[0] = 1ULL;
-
-    for (unsigned long long mask = 0x8000000000000000ULL >> __builtin_clzll(k);
-         mask; mask >>= 1) {
-        ubig tmp1, tmp2, t1, t2;
-        ubig_lshift(&tmp1, &b, 1);   // tmp1 = 2*b
-        ubig_sub(&tmp2, &tmp1, &a);  // tmp2 = 2*b - a
-        ubig_mul(&t1, &a, &tmp2);    // t1 = a*(2*b - a)
-
-        ubig_mul(&tmp1, &a, &a);      // tmp1 = a^2
-        ubig_mul(&tmp2, &b, &b);      // tmp2 = b^2
-        ubig_add(&t2, &tmp1, &tmp2);  // t2 = a^2 + b^2
-
-        a = t1, b = t2;
-        if (k & mask) {
-            ubig_add(&t1, &a, &b);  // t1 = a + b
-            a = b, b = t1;
-        }
-    }
-
-    return a;
-}
-#endif
+#define BUFFSIZE 2500
 
 static int fib_open(struct inode *inode, struct file *file)
 {
@@ -118,10 +51,17 @@ static ssize_t fib_read(struct file *file,
                         loff_t *offset)
 {
     ktime_t t = ktime_get();
-    char fibbuf[BUFFSIZE];
-    ubig fib = fib_sequence(*offset);
-    int __offset = ubig_to_string(fibbuf, BUFFSIZE, &fib);
-    copy_to_user(buf, fibbuf + __offset, BUFFSIZE - __offset);
+    ubig *fib = fib_sequence(*offset);
+
+    if (!fib) {  // fail to calculate fib k
+        copy_to_user(buf, "", 1);
+    } else {
+        char fibbuf[BUFFSIZE];
+        int __offset = ubig_to_string(fibbuf, BUFFSIZE, fib);
+        copy_to_user(buf, fibbuf + __offset, BUFFSIZE - __offset);
+        destroy_ubig(fib);
+    }
+
     s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
     return elapsed;
 }

@@ -6,9 +6,7 @@
 #include <unistd.h>
 
 #define FIB_DEV "/dev/fibonacci"
-
-#define BIGN
-#define BUFFSIZE 500
+#define BUFFSIZE 2500
 
 int main()
 {
@@ -32,33 +30,19 @@ int main()
     for (int i = 0; i <= offset; i++) {
         lseek(fd, i, SEEK_SET);
         sz = read(fd, buf, BUFFSIZE);
-#ifdef BIGN
         printf("Reading from " FIB_DEV
                " at offset %d, returned the sequence "
                "%s.\n",
                i, buf);
-#else
-        printf("Reading from " FIB_DEV
-               " at offset %d, returned the sequence "
-               "%lld.\n",
-               i, sz);
-#endif
     }
 
     for (int i = offset; i >= 0; i--) {
         lseek(fd, i, SEEK_SET);
         sz = read(fd, buf, BUFFSIZE);
-#ifdef BIGN
         printf("Reading from " FIB_DEV
                " at offset %d, returned the sequence "
                "%s.\n",
                i, buf);
-#else
-        printf("Reading from " FIB_DEV
-               " at offset %d, returned the sequence "
-               "%lld.\n",
-               i, sz);
-#endif
     }
 
     close(fd);

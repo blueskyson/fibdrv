@@ -31,3 +31,5 @@ client
 out
 
 .vscode/
+test.c
+a
