@@ -26,9 +26,6 @@ static struct cdev *fib_cdev;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 
-/* replace unsigned long long with struct BigN */
-#define BUFFSIZE 2500
-
 static int fib_open(struct inode *inode, struct file *file)
 {
     if (!mutex_trylock(&fib_mutex)) {
@@ -50,20 +47,18 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    ktime_t t = ktime_get();
-    ubig *fib = fib_sequence(*offset);
+    // ktime_t t = ktime_get();
 
-    if (!fib) {  // fail to calculate fib k
-        copy_to_user(buf, "", 1);
-    } else {
-        char fibbuf[BUFFSIZE];
-        int __offset = ubig_to_string(fibbuf, BUFFSIZE, fib);
-        copy_to_user(buf, fibbuf + __offset, BUFFSIZE - __offset);
-        destroy_ubig(fib);
-    }
+    ubig *fib = fib_sequence(*offset, size);
+    if (!fib)
+        return -1;
 
-    s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
-    return elapsed;
+    int ret_size = fib->size;
+    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned long long));
+    destroy_ubig(fib);
+
+    // s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
+    return ret_size;
 }
 
 /* write operation is skipped */

@@ -140,13 +140,16 @@ int ubig_to_string(char *buf, size_t bufsize, ubig *a)
     return (buf[offset] == '\0') ? (offset - 1) : offset;
 }
 
-// #define ADDING
+//#define ADDING
 #define FAST_DOUBLING
 
 #ifdef ADDING
-static ubig *fib_sequence(long long k)
+static ubig *fib_sequence(long long k, size_t user_size)
 {
     if (k <= 1LL) {
+        if (user_size < sizeof(unsigned long long))
+            return NULL;
+
         ubig *ret = new_ubig(1);
         if (!ret)
             return NULL;
@@ -155,6 +158,9 @@ static ubig *fib_sequence(long long k)
     }
 
     int sz = estimate_size(k);
+    if (user_size < sz * sizeof(unsigned long long))
+        return NULL;
+
     ubig *a = new_ubig(sz);
     ubig *b = new_ubig(sz);
     ubig *c = new_ubig(sz);
@@ -178,17 +184,24 @@ static ubig *fib_sequence(long long k)
 }
 
 #elif defined FAST_DOUBLING
-static ubig *fib_sequence(long long k)
+static ubig *fib_sequence(long long k, size_t user_size)
 {
     if (k <= 1LL) {
+        if (user_size < sizeof(unsigned long long))
+            return NULL;
+
         ubig *ret = new_ubig(1);
         if (!ret)
             return NULL;
+
         ret->cell[0] = (unsigned long long) k;
         return ret;
     }
 
     int sz = estimate_size(k);
+    if (user_size < sz * sizeof(unsigned long long))
+        return NULL;
+
     ubig *a = new_ubig(sz);
     ubig *b = new_ubig(sz);
     ubig *tmp1 = new_ubig(sz);
