@@ -110,7 +110,7 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
     /* do linear convolution */
     unsigned long long carry = 0ULL;
     for (int i = 0; i < length; i++) {
-        unsigned long long row_sum = carry;
+        unsigned long long col_sum = carry;
         carry = 0;
 
         int end = (i <= msb_b) ? i : msb_b;
@@ -118,11 +118,11 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
         for (int j = start, k = end; j <= end; j++, k--) {
             unsigned long long product =
                 (unsigned long long) a->cell[k] * b->cell[j];
-            row_sum += product;
-            carry += (row_sum < product);
+            col_sum += product;
+            carry += (col_sum < product);
         }
-        dest->cell[i] = (unsigned int) row_sum;
-        carry = (carry << 32) + (row_sum >> 32);
+        dest->cell[i] = (unsigned int) col_sum;
+        carry = (carry << 32) + (col_sum >> 32);
     }
 
     dest->cell[length] = carry;
