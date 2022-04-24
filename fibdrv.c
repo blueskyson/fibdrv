@@ -7,7 +7,7 @@
 #include <linux/ktime.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#include "ubig_2.h"
+#include "ubig_schonhange_strassen.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -47,17 +47,13 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    // ktime_t t = ktime_get();
-
     ubig *fib = fib_sequence(*offset, size);
     if (!fib)
         return -1;
 
     int ret_size = fib->size;
-    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned long long));
+    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned int));
     destroy_ubig(fib);
-
-    // s64 elapsed = ktime_to_ns(ktime_sub(ktime_get(), t));
     return ret_size;
 }
 

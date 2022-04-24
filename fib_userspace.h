@@ -1,5 +1,5 @@
-#include <linux/slab.h>
-#include <linux/string.h>
+#include <stdlib.h>
+#include <string.h>
 
 static inline int estimate_size(long long k)
 {
@@ -16,14 +16,13 @@ typedef struct BigN {
 
 ubig *new_ubig(int size)
 {
-    ubig *ptr = kmalloc(sizeof(ubig), GFP_KERNEL);
+    ubig *ptr = malloc(sizeof(ubig));
     if (!ptr)
         return NULL;
 
-    unsigned long long *ullptr =
-        kmalloc(size * sizeof(unsigned long long), GFP_KERNEL);
+    unsigned long long *ullptr = malloc(size * sizeof(unsigned long long));
     if (!ullptr) {
-        kfree(ptr);
+        free(ptr);
         return NULL;
     }
     memset(ullptr, 0, size * sizeof(unsigned long long));
@@ -37,8 +36,8 @@ static inline void destroy_ubig(ubig *ptr)
 {
     if (ptr) {
         if (ptr->cell)
-            kfree(ptr->cell);
-        kfree(ptr);
+            free(ptr->cell);
+        free(ptr);
     }
 }
 
@@ -61,7 +60,7 @@ static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
         dest->cell[i + 1] += (dest->cell[i] < a->cell[i]);
 }
 
-inline void ubig_sub(ubig *dest, ubig *a, ubig *b)
+static inline void ubig_sub(ubig *dest, ubig *a, ubig *b)
 {
     for (int i = 0; i < a->size; i++)
         dest->cell[i] = a->cell[i] - b->cell[i];
@@ -70,7 +69,7 @@ inline void ubig_sub(ubig *dest, ubig *a, ubig *b)
         dest->cell[i + 1] -= (dest->cell[i] > a->cell[i]);
 }
 
-inline void ubig_lshift(ubig *dest, ubig *a, int x)
+static inline void ubig_lshift(ubig *dest, ubig *a, int x)
 {
     // quotient and remainder of x being divided by 64
     unsigned quotient = x >> 6, remainder = x & 0x3f;
@@ -110,114 +109,6 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b, ubig *shift_buf, ubig *add_buf)
     }
 }
 
-int ubig_to_string(char *buf, size_t bufsize, ubig *a)
-{
-    memset(buf, '0', bufsize);
-    buf[bufsize - 1] = '\0';
-
-    int index = a->size - 1;
-    while (index > 0 && !a->cell[index])
-        index--;
-    if (index < 0)
-        return bufsize - 2;
-
-    for (int i = index; i >= 0; i--) {
-        for (unsigned long long mask = 0x8000000000000000ULL; mask;
-             mask >>= 1) {
-            int carry = ((a->cell[i] & mask) != 0);
-            for (int j = bufsize - 2; j >= 0; j--) {
-                buf[j] += buf[j] - '0' + carry;
-                carry = (buf[j] > '9');
-                if (carry)
-                    buf[j] -= 10;
-            }
-        }
-    }
-
-    int offset = 0;
-    while (buf[offset] == '0')
-        offset++;
-    return (buf[offset] == '\0') ? (offset - 1) : offset;
-}
-
-/* unsigned long long array to decimal string */
-int fib_to_string(char *buf,
-                  int buf_sz,
-                  const unsigned long long *fib,
-                  int fib_sz)
-{
-    memset(buf, '0', buf_sz);
-    buf[buf_sz - 1] = '\0';
-
-    int index = fib_sz - 1;
-    while (index > 0 && !fib[index])
-        index--;
-    if (index < 0)
-        return buf_sz - 2;
-
-    for (int i = index; i >= 0; i--) {
-        for (unsigned long long mask = 0x8000000000000000ULL; mask;
-             mask >>= 1) {
-            int carry = ((fib[i] & mask) != 0);
-            for (int j = buf_sz - 2; j >= 0; j--) {
-                buf[j] += buf[j] - '0' + carry;
-                carry = (buf[j] > '9');
-                if (carry)
-                    buf[j] -= 10;
-            }
-        }
-    }
-
-    int offset = 0;
-    while (buf[offset] == '0')
-        offset++;
-    return (buf[offset] == '\0') ? (offset - 1) : offset;
-}
-
-//#define ADDING
-#define FAST_DOUBLING
-
-#ifdef ADDING
-static ubig *fib_sequence(long long k, size_t user_size)
-{
-    if (k <= 1LL) {
-        if (user_size < sizeof(unsigned long long))
-            return NULL;
-
-        ubig *ret = new_ubig(1);
-        if (!ret)
-            return NULL;
-        ret->cell[0] = (unsigned long long) k;
-        return ret;
-    }
-
-    int sz = estimate_size(k);
-    if (user_size < sz * sizeof(unsigned long long))
-        return NULL;
-
-    ubig *a = new_ubig(sz);
-    ubig *b = new_ubig(sz);
-    ubig *c = new_ubig(sz);
-    if (!a || !b || !c) {
-        destroy_ubig(a);
-        destroy_ubig(b);
-        destroy_ubig(c);
-        return NULL;
-    }
-
-    b->cell[0] = 1ULL;
-    for (int i = 2; i <= k; i++) {
-        ubig_add(c, a, b);
-        ubig_assign(a, b);
-        ubig_assign(b, c);
-    }
-
-    destroy_ubig(a);
-    destroy_ubig(b);
-    return c;
-}
-
-#elif defined FAST_DOUBLING
 static ubig *fib_sequence(long long k, size_t user_size)
 {
     if (k <= 1LL) {
@@ -285,4 +176,3 @@ static ubig *fib_sequence(long long k, size_t user_size)
     destroy_ubig(mul_buf2);
     return a;
 }
-#endif
