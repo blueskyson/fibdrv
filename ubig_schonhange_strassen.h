@@ -99,7 +99,8 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
     // find the array index of the MSB of a, b
     int msb_a = ubig_msb_idx(a);
     int msb_b = ubig_msb_idx(b);
-    // a == 0 or b == 0
+
+    // a == 0 or b == 0 then dest = 0
     if (msb_a < 0 || msb_b < 0)
         return;
 
@@ -174,19 +175,19 @@ static ubig *fib_sequence(long long k, size_t user_size)
 static ubig *fib_sequence(long long k, size_t user_size)
 {
     if (k <= 1LL) {
-        if (user_size < sizeof(unsigned long long))
+        if (user_size < sizeof(unsigned int))
             return NULL;
 
         ubig *ret = new_ubig(1);
         if (!ret)
             return NULL;
 
-        ret->cell[0] = (unsigned long long) k;
+        ret->cell[0] = (unsigned int) k;
         return ret;
     }
 
     int sz = estimate_size(k);
-    if (user_size < sz * sizeof(unsigned long long))
+    if (user_size < sz * sizeof(unsigned int))
         return NULL;
 
     ubig *a = new_ubig(sz);
