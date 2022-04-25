@@ -64,15 +64,15 @@ int main()
     }
 
     long long utime_arr[1001][100];
-    char str_buf[BUFFSIZE];
-    for (int i = 0; i < 100; i++) {
+    // char str_buf[BUFFSIZE];
+    for (int i = 0; i < 188795; i++) {
         for (int j = 0; j <= offset; j++) {
             struct timespec start, end;
             lseek(fd, j, SEEK_SET);
             clock_gettime(CLOCK_REALTIME, &start);
 
             long long sz = read(fd, buf, BUFFSIZE);
-            fib_to_string(str_buf, BUFFSIZE, (unsigned long long *) buf, sz);
+            // fib_to_string(str_buf, BUFFSIZE, (unsigned long long *) buf, sz);
             // ubig *f = fib_sequence(j, BUFFSIZE);
             // fib_to_string(str_buf, BUFFSIZE, (unsigned long long *)f->cell,
             // f->size);
