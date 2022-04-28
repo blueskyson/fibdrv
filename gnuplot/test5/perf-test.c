@@ -53,8 +53,8 @@ int compare(const void *a, const void *b)
 int main()
 {
     char buf[BUFFSIZE];
-#define iter 201
-#define step 1
+#define iter 1001
+#define step 50
 
     int fd = open(FIB_DEV, O_RDWR);
     if (fd < 0) {

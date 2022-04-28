@@ -7,7 +7,10 @@
 #include <linux/ktime.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#include "ubig_karatsuba.h"
+
+#include "ubig_long_multiplication.h"
+// #include "ubig_karatsuba.h"
+// #include "ubig_schonhage_strassen.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");

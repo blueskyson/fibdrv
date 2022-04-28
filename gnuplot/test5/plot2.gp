@@ -9,3 +9,4 @@ set key left
 
 plot \
 "ss.txt" using 1:2 with points title "Schonhange-Strassen", \
+"karatsuba.txt" using 1:2 with points title "Karatsuba", \

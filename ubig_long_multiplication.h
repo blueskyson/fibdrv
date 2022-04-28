@@ -117,8 +117,8 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b, ubig *shift_buf, ubig *add_buf)
     }
 }
 
-// #define ADDING
-#define FAST_DOUBLING
+#define ADDING
+// #define FAST_DOUBLING
 
 #ifdef ADDING
 static ubig *fib_sequence(long long k, size_t user_size)
