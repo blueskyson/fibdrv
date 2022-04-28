@@ -128,50 +128,6 @@ void ubig_mul(ubig *dest, ubig *a, ubig *b)
     dest->cell[length] = carry;
 }
 
-#define ADDING
-// #define FAST_DOUBLING
-
-#ifdef ADDING
-static ubig *fib_sequence(long long k, size_t user_size)
-{
-    if (k <= 1LL) {
-        if (user_size < sizeof(unsigned int))
-            return NULL;
-
-        ubig *ret = new_ubig(1);
-        if (!ret)
-            return NULL;
-        ret->cell[0] = (unsigned int) k;
-        return ret;
-    }
-
-    int sz = estimate_size(k);
-    if (user_size < sz * sizeof(unsigned int))
-        return NULL;
-
-    ubig *a = new_ubig(sz);
-    ubig *b = new_ubig(sz);
-    ubig *c = new_ubig(sz);
-    if (!a || !b || !c) {
-        destroy_ubig(a);
-        destroy_ubig(b);
-        destroy_ubig(c);
-        return NULL;
-    }
-
-    b->cell[0] = 1ULL;
-    for (int i = 2; i <= k; i++) {
-        ubig_add(c, a, b);
-        ubig_assign(a, b);
-        ubig_assign(b, c);
-    }
-
-    destroy_ubig(a);
-    destroy_ubig(b);
-    return c;
-}
-
-#elif defined FAST_DOUBLING
 static ubig *fib_sequence(long long k, size_t user_size)
 {
     if (k <= 1LL) {
@@ -233,4 +189,3 @@ static ubig *fib_sequence(long long k, size_t user_size)
     destroy_ubig(t2);
     return a;
 }
-#endif

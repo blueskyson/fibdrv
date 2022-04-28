@@ -8,9 +8,7 @@
 #include "fib_userspace.h"
 
 #define FIB_DEV "/dev/fibonacci"
-
-#define BIGN
-#define BUFFSIZE 500
+#define BUFFSIZE 40000
 
 int fib_to_string(char *buf,
                   int buf_sz,
@@ -55,7 +53,8 @@ int compare(const void *a, const void *b)
 int main()
 {
     char buf[BUFFSIZE];
-    int offset = 1000;
+#define iter 1001
+#define step 50
 
     int fd = open(FIB_DEV, O_RDWR);
     if (fd < 0) {
@@ -63,12 +62,12 @@ int main()
         exit(1);
     }
 
-    long long utime_arr[1001][100];
+    long long utime_arr[iter + 2][10];
     // char str_buf[BUFFSIZE];
-    for (int i = 0; i < 188795; i++) {
-        for (int j = 0; j <= offset; j++) {
+    for (int i = 0; i < iter; i++) {
+        for (int j = 0; j < 10; j++) {
             struct timespec start, end;
-            lseek(fd, j, SEEK_SET);
+            lseek(fd, i * step, SEEK_SET);
             clock_gettime(CLOCK_REALTIME, &start);
 
             long long sz = read(fd, buf, BUFFSIZE);
@@ -79,18 +78,16 @@ int main()
 
             clock_gettime(CLOCK_REALTIME, &end);
             // free(f); //userspace
-            utime_arr[j][i] = (long long) end.tv_nsec - start.tv_nsec;
+            utime_arr[i][j] = (long long) end.tv_nsec - start.tv_nsec;
         }
-    }
 
-    for (int i = 0; i <= offset; i++) {
-        qsort((void *) &utime_arr[i][0], 100, sizeof(long long), compare);
+        qsort((void *) &utime_arr[i][0], 10, sizeof(long long), compare);
         long long utime_avg = 0, ktime_avg = 0;
-        for (int j = 10; j < 90; j++) {
+        for (int j = 2; j < 8; j++) {
             utime_avg += utime_arr[i][j];
         }
-        utime_avg /= 80;
-        printf("%d %lld\n", i, utime_avg);
+        utime_avg /= 6;
+        printf("%d %lld\n", i * step, utime_avg);
     }
 
     close(fd);
