@@ -5,11 +5,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-// First method: use struct BigN to store 128-bit unisgned integer.
+/* First method: use struct BigN to store 128-bit unisgned integer. */
 // #include "lib/unsigned128.h"
 
-// Second method: use unsigned long long array to store big number.
-#include "lib/unsigned_bignum.h"
+/* Second method: use unsigned long long array to store big number. */
+// #include "lib/bignum.h"
+
+/* Third method: introduce fast-doubling */
+#include "lib/bignum_fast_doubling.h"
 
 #define FIB_DEV "/dev/fibonacci"
 #define FIBSIZE 256

@@ -14,7 +14,11 @@
 // #define MAX_LENGTH 184
 
 /* Second method: use unsigned long long array to store big number. */
-#include "lib/unsigned_bignum.h"
+// #include "lib/bignum.h"
+// #define MAX_LENGTH 1093
+
+/* Third method: introduce fast-doubling */
+#include "lib/bignum_fast_doubling.h"
 #define MAX_LENGTH 1093
 
 MODULE_LICENSE("Dual MIT/GPL");
