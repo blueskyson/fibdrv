@@ -9,6 +9,9 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
+// First method: use struct BigN to store 128-bit unisgned integer.
+#include "lib/unsigned128.h"
+
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Fibonacci engine driver");
@@ -19,39 +22,12 @@ MODULE_VERSION("0.1");
 /* MAX_LENGTH is set to 92 because
  * ssize_t can't fit the number > 92
  */
-#define MAX_LENGTH 92
+#define MAX_LENGTH 100
 
 static dev_t fib_dev = 0;
 static struct class *fib_class;
 static DEFINE_MUTEX(fib_mutex);
 static int major = 0, minor = 0;
-
-/**
- * fib_sequence() - Calculate the k-th Fibonacci number
- * @k:     Index of the Fibonacci number to calculate
- *
- * Return: The k-th Fibonacci number on success, -ENOMEM on memory allocation
- * failure.
- */
-static long long fib_sequence(long long k)
-{
-    long long *f = kmalloc(sizeof(*f) * (k + 2), GFP_KERNEL);
-    if (!f)
-        return -ENOMEM;
-
-    f[0] = 0;
-    f[1] = 1;
-
-    for (int i = 2; i <= k; i++) {
-        f[i] = f[i - 1] + f[i - 2];
-    }
-
-    long long ret = f[k];
-
-    kfree(f);
-
-    return ret;
-}
 
 static int fib_open(struct inode *inode, struct file *file)
 {
@@ -74,7 +50,9 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    return (ssize_t) fib_sequence(*offset);
+    struct BigN fib = fib_sequence(*offset);
+    copy_to_user(buf, &fib, sizeof(fib));
+    return sizeof(fib);
 }
 
 /* write operation is skipped */
