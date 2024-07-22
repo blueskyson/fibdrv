@@ -9,8 +9,13 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
-// First method: use struct BigN to store 128-bit unisgned integer.
-#include "lib/unsigned128.h"
+/* First method: use struct BigN to store 128-bit unisgned integer. */
+// #include "lib/unsigned128.h"
+// #define MAX_LENGTH 184
+
+/* Second method: use unsigned long long array to store big number. */
+#include "lib/unsigned_bignum.h"
+#define MAX_LENGTH 1093
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -18,11 +23,6 @@ MODULE_DESCRIPTION("Fibonacci engine driver");
 MODULE_VERSION("0.1");
 
 #define DEV_FIBONACCI_NAME "fibonacci"
-
-/* MAX_LENGTH is set to 92 because
- * ssize_t can't fit the number > 92
- */
-#define MAX_LENGTH 100
 
 static dev_t fib_dev = 0;
 static struct class *fib_class;

@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "unsigned128.h": "c",
+        "kernel.h": "c",
+        "version.h": "c",
+        "slab.h": "c",
+        "unsigned_bignum.h": "c"
+    }
+}
