@@ -9,23 +9,18 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
-/* First method: use struct BigN to store 128-bit unisgned integer. */
-// #include "lib/unsigned128.h"
-// #define MAX_LENGTH 184
+/* Method 1: use unsigned long long array to store big number. */
+#include "lib/adding.h"
 
-/* Second method: use unsigned long long array to store big number. */
-// #include "lib/bignum.h"
-// #define MAX_LENGTH 1093
-
-/* Third method: introduce fast-doubling */
-#include "lib/bignum_fast_doubling.h"
-#define MAX_LENGTH 1093
+/* Method 2: introduce fast-doubling */
+// #include "lib/fast_doubling.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Fibonacci engine driver");
 MODULE_VERSION("0.1");
 
+#define MAX_LENGTH 1093
 #define DEV_FIBONACCI_NAME "fibonacci"
 
 static dev_t fib_dev = 0;

@@ -5,18 +5,57 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/* First method: use struct BigN to store 128-bit unisgned integer. */
-// #include "lib/unsigned128.h"
-
-/* Second method: use unsigned long long array to store big number. */
-// #include "lib/bignum.h"
-
-/* Third method: introduce fast-doubling */
-#include "lib/bignum_fast_doubling.h"
-
 #define FIB_DEV "/dev/fibonacci"
 #define FIBSIZE 256
 #define BUFFSIZE 2500
+
+#define BIGNSIZE 12
+
+typedef struct BigN {
+    unsigned long long cell[BIGNSIZE];
+} ubig;
+
+/**
+ * fib_to_string() - Convert the k-th Fibonacci number into string.
+ * @buf: Buffer where the resulting string will be stored.
+ * @buf_sz: Size of the buffer.
+ * @fib: Pointer to the Fibonacci number data.
+ * @fib_sz: Size of the Fibonacci number data (unused in this implementation).
+ *
+ * Return: The start position (offset) of the @fib string, which is always 0
+ * in this implementation.
+ */
+int fib_to_string(char *buf, int buf_sz, void *fib, int fib_sz)
+{
+    const ubig *f = (ubig *) fib;
+
+    memset(buf, '0', buf_sz);
+    buf[buf_sz - 1] = '\0';
+    int index = BIGNSIZE - 1;
+    while (index >= 0 && !f->cell[index])
+        index--;
+    if (index == -1) {
+        return buf_sz - 2;
+    }
+
+    for (int i = index; i >= 0; i--) {
+        for (unsigned long long mask = 0x8000000000000000ULL; mask;
+             mask >>= 1) {
+            int carry = ((f->cell[i] & mask) != 0);
+            for (int j = buf_sz - 2; j >= 0; j--) {
+                buf[j] += buf[j] - '0' + carry;
+                carry = (buf[j] > '9');
+                if (carry)
+                    buf[j] -= 10;
+            }
+        }
+    }
+
+    int offset = 0;
+    while (buf[offset] == '0')
+        offset++;
+    return (buf[offset] == '\0') ? (offset - 1) : offset;
+}
 
 int main()
 {
