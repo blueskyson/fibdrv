@@ -10,18 +10,19 @@
 #include <linux/version.h>
 
 /* Method 1: use unsigned long long array to store big number. */
-#include "lib/adding.h"
+// #include "lib/adding.h"
 
 /* Method 2: introduce fast-doubling */
-// #include "lib/fast_doubling.h"
+#include "lib/fast_doubling.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
 MODULE_DESCRIPTION("Fibonacci engine driver");
 MODULE_VERSION("0.1");
 
-#define MAX_LENGTH 1093
+#define MAX_LENGTH 188795
 #define DEV_FIBONACCI_NAME "fibonacci"
+#define BUFFSIZE 2500
 
 static dev_t fib_dev = 0;
 static struct class *fib_class;
@@ -49,9 +50,17 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    struct BigN fib = fib_sequence(*offset);
-    copy_to_user(buf, &fib, sizeof(fib));
-    return sizeof(fib);
+    struct BigN *fib = fib_sequence(*offset);
+    if (!fib) {  // fail to calculate fib k
+        copy_to_user(buf, "", 1);
+        return 0;
+    }
+
+    char fib_buf[BUFFSIZE];
+    int __offset = fib_to_string(fib_buf, BUFFSIZE, fib);
+    copy_to_user(buf, fib_buf + __offset, BUFFSIZE - __offset);
+    destroy_ubig(fib);
+    return BUFFSIZE - __offset;
 }
 
 /* write operation is skipped */
