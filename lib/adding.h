@@ -64,11 +64,11 @@ static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
 static ubig *fib_sequence(long long k)
 {
     if (k <= 1LL) {
-        ubig *ret = new_ubig(1);
-        if (!ret)
+        ubig *result = new_ubig(1);
+        if (!result)
             return NULL;
-        ret->cell[0] = (unsigned int) k;
-        return ret;
+        result->cell[0] = (unsigned int) k;
+        return result;
     }
 
     int sz = estimate_size(k);

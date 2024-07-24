@@ -2,6 +2,7 @@
     "files.associations": {
         "adding.h": "c",
         "fast_doubling.h": "c",
-        "schonhange_strassen.h": "c"
+        "schonhange_strassen.h": "c",
+        "karatsuba.h": "c"
     }
 }

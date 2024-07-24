@@ -9,14 +9,17 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
-/* Method 1: use unsigned long long array to store big number. */
+/**
+ * Only include one calculation method at a time.
+ * Method 1: Use unsigned long long array to store big number.
+ * Method 2: Introduce fast-doubling.
+ * Method 3: Optimize multiplication using Schonhange Strassen.
+ * Method 4: Optimize multiplication using Karatsuba.
+ */
 // #include "lib/adding.h"
-
-/* Method 2: introduce fast-doubling */
 // #include "lib/fast_doubling.h"
-
-/* Method 2: Optimize multiplication using Schonhange Strassen */
-#include "lib/schonhange_strassen.h"
+// #include "lib/schonhange_strassen.h"
+#include "lib/karatsuba.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");

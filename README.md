@@ -30,6 +30,22 @@ make check
 
 You will see `Passed [-]` if it works properly.
 
+To change algorighm, please uncomment one library in [fibdrv.c](./fibdrv.c).
+
+```c
+/** 
+ * Only include one calculation method at a time.
+ * Method 1: Use unsigned long long array to store big number. 
+ * Method 2: Introduce fast-doubling.
+ * Method 3: Optimize multiplication using Schonhange Strassen.
+ * Method 4: Optimize multiplication using Karatsuba.
+ */
+// #include "lib/adding.h"
+// #include "lib/fast_doubling.h"
+// #include "lib/schonhange_strassen.h"
+#include "lib/karatsuba.h"
+```
+
 ## References
 * [The Linux Kernel Module Programming Guide](https://sysprog21.github.io/lkmpg/)
 * [Writing a simple device driver](https://www.apriorit.com/dev-blog/195-simple-driver-for-linux-os)
