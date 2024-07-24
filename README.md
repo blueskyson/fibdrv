@@ -28,7 +28,17 @@ Compile and Test Functionality:
 make check
 ```
 
-You will see `Passed [-]` if it works properly.
+You will see `Passed [-]` if it works properly. and The result will be dumped in `out` file.
+
+```
+cat out
+Reading from /dev/fibonacci at offset 0, returned the sequence 0.
+Reading from /dev/fibonacci at offset 1, returned the sequence 1.
+Reading from /dev/fibonacci at offset 2, returned the sequence 1.
+Reading from /dev/fibonacci at offset 3, returned the sequence 2.
+... (skip)
+Reading from /dev/fibonacci at offset 300, returned the sequence 222232244629420445529739893461909967206666939096499764990979600.
+```
 
 To change algorighm, please uncomment one library in [fibdrv.c](./fibdrv.c).
 
