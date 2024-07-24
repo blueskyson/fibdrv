@@ -1,8 +1,20 @@
 # fibdrv
 
-Linux kernel module that creates device /dev/fibonacci.  Writing to this device
-should have no effect, however reading at offset k should return the kth
-fibonacci number.
+`Fibdrv` is a Linux kernel module that calculates the Fibonacci sequence. It is an assignment of *CSIE3018 - Linux Kernel Internals* by [Ching-Chun (Jim) Huang](https://www.csie.ncku.edu.tw/en/members/5) at National Cheng Kung University. In this assignment, I made `fibdrv` theoretically possible to calculate $F_{188795}$ and, using the relationship between the Fibonacci sequence and the **golden ratio**, made memory allocation deterministic. Additionally, I used **Fast Doubling** to reduce the amount of computations, and compared the computation times of the **Karatsuba** and **Schönhage–Strassen** algorithms.
+
+Programs usually use previous generated values as the basis for the next calculation when computing random numbers. See [Pseudo-Random Number Generators](https://en.wikipedia.org/wiki/Pseudorandom_number_generator) (PRNG). Fibonacci, after modifying the initial value or performing mod calculations, can produce numbers that are not easily predictable. This method of generating random numbers is called [Lagged Fibonacci generator](https://en.wikipedia.org/wiki/Lagged_Fibonacci_generator) (LFG). See also: [For The Love of Computing: The Lagged Fibonacci Generator — Where Nature Meet Random Numbers](https://medium.com/asecuritysite-when-bob-met-alice/for-the-love-of-computing-the-lagged-fibonacci-generator-where-nature-meet-random-numbers-f9fb5bd6c237).
+
+The expected goals are:
+- Writing programs for the Linux kernel level
+- Learning core APIs such as `ktimer` and `copy_to_user`
+- Reviewing C language numerical systems and bitwise operations
+- improving numerical analysis and computation strategies
+- Exploring Linux VFS
+- Implementing automatic testing mechanisms
+- Conducting performance analysis through `perf`
+
+Homework instructions (in Chinese): [https://hackmd.io/@sysprog/linux2022-fibdrv](https://hackmd.io/@sysprog/linux2022-fibdrv)  
+Old version dev blog: [https://jacklinweb.github.io/posts/fibdrv/](https://jacklinweb.github.io/posts/fibdrv/z)
 
 ## Run Test
 
