@@ -46,7 +46,7 @@ static inline void zero_ubig(ubig *x)
     memset(x->cell, 0, x->size * sizeof(unsigned int));
 }
 
-static inline void ubig_assign(ubig *dest, ubig *src)
+static inline void ubig_assign(ubig *dest, const ubig *src)
 {
     memcpy(dest->cell, src->cell, dest->size * sizeof(unsigned int));
 }
@@ -84,48 +84,57 @@ static inline void ubig_lshift(ubig *dest, ubig *a, int x)
             dest->cell[i + quotient] |= a->cell[i - 1] >> (32 - remainder);
 }
 
-static inline void ubig_mul(ubig *dest,
-                            ubig *a,
-                            const ubig *b,
-                            ubig *shift_buf,
-                            ubig *add_buf)
+static inline int ubig_msb_idx(const ubig *a)
 {
-    zero_ubig(dest);
-    int index = a->size - 1;
-    while (index >= 0 && !b->cell[index])
-        index--;
-    if (index < 0)
-        return;
-
-    for (int i = index; i >= 0; i--) {
-        int bit_index = (i << 5) + 31;
-        for (unsigned long long mask = 0x80000000ULL; mask; mask >>= 1) {
-            if (b->cell[i] & mask) {
-                zero_ubig(shift_buf);
-                zero_ubig(add_buf);
-
-                ubig_lshift(shift_buf, a, bit_index);
-                ubig_add(add_buf, dest, shift_buf);
-                ubig_assign(dest, add_buf);
-            }
-            bit_index--;
-        }
-    }
+    int msb_i = a->size - 1;
+    while (msb_i >= 0 && !a->cell[msb_i])
+        msb_i--;
+    return msb_i;
 }
 
-/**
- * fib_sequence() - Calculate the k-th Fibonacci number.
- * @k:     Index of the Fibonacci number to calculate.
- *
- * Return: The k-th Fibonacci number on success.
- */
+void ubig_mul(ubig *dest, ubig *a, ubig *b)
+{
+    zero_ubig(dest);
+
+    // find the array index of the MSB of a, b
+    int msb_a = ubig_msb_idx(a);
+    int msb_b = ubig_msb_idx(b);
+
+    // a == 0 or b == 0 then dest = 0
+    if (msb_a < 0 || msb_b < 0)
+        return;
+
+    // calculate the length of linear convolution vector
+    int length = msb_a + msb_b + 1;
+
+    /* do linear convolution */
+    unsigned long long carry = 0ULL;
+    for (int i = 0; i < length; i++) {
+        unsigned long long row_sum = carry;
+        carry = 0;
+
+        int end = (i <= msb_b) ? i : msb_b;
+        int start = i - end;
+        for (int j = start, k = end; j <= end; j++, k--) {
+            unsigned long long product =
+                (unsigned long long) a->cell[k] * b->cell[j];
+            row_sum += product;
+            carry += (row_sum < product);
+        }
+        dest->cell[i] = (unsigned int) row_sum;
+        carry = (carry << 32) + (row_sum >> 32);
+    }
+
+    dest->cell[length] = carry;
+}
+
 static ubig *fib_sequence(long long k)
 {
     if (k <= 1LL) {
         ubig *result = new_ubig(1);
         if (!result)
             return NULL;
-        result->cell[0] = (unsigned int) k;
+        result->cell[0] = (unsigned long long) k;
         return result;
     }
 
@@ -136,30 +145,26 @@ static ubig *fib_sequence(long long k)
     ubig *tmp2 = new_ubig(sz);
     ubig *t1 = new_ubig(sz);
     ubig *t2 = new_ubig(sz);
-    ubig *mul_buf1 = new_ubig(sz);
-    ubig *mul_buf2 = new_ubig(sz);
-    if (!a || !b || !tmp1 || !tmp2 || !t1 || !t2 || !mul_buf1 || !mul_buf2) {
+    if (!a || !b || !tmp1 || !tmp2 || !t1 || !t2) {
         destroy_ubig(a);
         destroy_ubig(b);
         destroy_ubig(tmp1);
         destroy_ubig(tmp2);
         destroy_ubig(t1);
         destroy_ubig(t2);
-        destroy_ubig(mul_buf1);
-        destroy_ubig(mul_buf2);
         return NULL;
     }
-    b->cell[0] = 1ULL;
+    b->cell[0] = 1U;
 
-    for (unsigned int mask = 0x80000000U >> __builtin_clzll(k); mask;
-         mask >>= 1) {
-        ubig_lshift(tmp1, b, 1);                    // tmp1 = 2*b
-        ubig_sub(tmp2, tmp1, a);                    // tmp2 = 2*b - a
-        ubig_mul(t1, a, tmp2, mul_buf1, mul_buf2);  // t1 = a*(2*b - a)
+    for (unsigned long long mask = 0x8000000000000000ULL >> __builtin_clzll(k);
+         mask; mask >>= 1) {
+        ubig_lshift(tmp1, b, 1);  // tmp1 = 2*b
+        ubig_sub(tmp2, tmp1, a);  // tmp2 = 2*b - a
+        ubig_mul(t1, a, tmp2);    // t1 = a*(2*b - a)
 
-        ubig_mul(tmp1, a, a, mul_buf1, mul_buf2);  // tmp1 = a^2
-        ubig_mul(tmp2, b, b, mul_buf1, mul_buf2);  // tmp2 = b^2
-        ubig_add(t2, tmp1, tmp2);                  // t2 = a^2 + b^2
+        ubig_mul(tmp1, a, a);      // tmp1 = a^2
+        ubig_mul(tmp2, b, b);      // tmp2 = b^2
+        ubig_add(t2, tmp1, tmp2);  // t2 = a^2 + b^2
 
         ubig_assign(a, t1);
         ubig_assign(b, t2);
@@ -175,7 +180,5 @@ static ubig *fib_sequence(long long k)
     destroy_ubig(tmp2);
     destroy_ubig(t1);
     destroy_ubig(t2);
-    destroy_ubig(mul_buf1);
-    destroy_ubig(mul_buf2);
     return a;
 }

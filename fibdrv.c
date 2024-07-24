@@ -13,7 +13,10 @@
 // #include "lib/adding.h"
 
 /* Method 2: introduce fast-doubling */
-#include "lib/fast_doubling.h"
+// #include "lib/fast_doubling.h"
+
+/* Method 2: Optimize multiplication using Schonhange Strassen */
+#include "lib/schonhange_strassen.h"
 
 MODULE_LICENSE("Dual MIT/GPL");
 MODULE_AUTHOR("National Cheng Kung University, Taiwan");
@@ -52,7 +55,7 @@ static ssize_t fib_read(struct file *file,
 {
     /* Check if buffer has enough size */
     int sz = estimate_size(*offset);
-    if (size < sz * sizeof(unsigned long long)) {
+    if (size < sz * sizeof(unsigned int)) {
         return -1;
     }
 
@@ -62,7 +65,7 @@ static ssize_t fib_read(struct file *file,
     }
 
     int fib_size = fib->size;
-    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned long long));
+    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned int));
     destroy_ubig(fib);
     return fib_size;
 }

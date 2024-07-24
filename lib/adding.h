@@ -3,33 +3,32 @@
 
 static inline int estimate_size(long long k)
 {
-    if (k <= 93)
+    if (k <= 43)
         return 1;
-    unsigned long long n = (k * 20899 - 34950) / 1926610;
+    unsigned long long n = (k * 20899 - 34950) / 963305;
     return (int) n + 1;
 }
 
 typedef struct BigN {
     int size;
-    unsigned long long *cell;
+    unsigned int *cell;
 } ubig;
 
 ubig *new_ubig(int size)
 {
-    ubig *ptr = (ubig *) kmalloc(sizeof(ubig), GFP_KERNEL);
+    ubig *ptr = kmalloc(sizeof(ubig), GFP_KERNEL);
     if (!ptr)
-        return (ubig *) NULL;
+        return NULL;
 
-    unsigned long long *ullptr = (unsigned long long *) kmalloc(
-        size * sizeof(unsigned long long), GFP_KERNEL);
-    if (!ullptr) {
+    unsigned int *cellptr = kmalloc(size * sizeof(unsigned int), GFP_KERNEL);
+    if (!cellptr) {
         kfree(ptr);
-        return (ubig *) NULL;
+        return NULL;
     }
-    memset(ullptr, 0, size * sizeof(unsigned long long));
+    memset(cellptr, 0, size * sizeof(unsigned int));
 
     ptr->size = size;
-    ptr->cell = ullptr;
+    ptr->cell = cellptr;
     return ptr;
 }
 
@@ -42,14 +41,9 @@ static inline void destroy_ubig(ubig *ptr)
     }
 }
 
-static inline void zero_ubig(ubig *x)
+static inline void ubig_assign(ubig *dest, const ubig *src)
 {
-    memset(x->cell, 0, x->size * sizeof(unsigned long long));
-}
-
-static inline void ubig_assign(ubig *dest, ubig *src)
-{
-    memcpy(dest->cell, src->cell, dest->size * sizeof(unsigned long long));
+    memcpy(dest->cell, src->cell, dest->size * sizeof(unsigned int));
 }
 
 static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
@@ -59,15 +53,6 @@ static inline void ubig_add(ubig *dest, ubig *a, ubig *b)
 
     for (int i = 0; i < a->size - 1; i++)
         dest->cell[i + 1] += (dest->cell[i] < a->cell[i]);
-}
-
-static inline void ubig_sub(ubig *dest, ubig *a, ubig *b)
-{
-    for (int i = 0; i < a->size; i++)
-        dest->cell[i] = a->cell[i] - b->cell[i];
-
-    for (int i = 0; i < a->size - 1; i++)
-        dest->cell[i + 1] -= (dest->cell[i] > a->cell[i]);
 }
 
 /**
@@ -81,8 +66,8 @@ static ubig *fib_sequence(long long k)
     if (k <= 1LL) {
         ubig *ret = new_ubig(1);
         if (!ret)
-            return (ubig *) NULL;
-        ret->cell[0] = (unsigned long long) k;
+            return NULL;
+        ret->cell[0] = (unsigned int) k;
         return ret;
     }
 
@@ -94,7 +79,7 @@ static ubig *fib_sequence(long long k)
         destroy_ubig(a);
         destroy_ubig(b);
         destroy_ubig(c);
-        return (ubig *) NULL;
+        return NULL;
     }
 
     b->cell[0] = 1ULL;
@@ -107,42 +92,4 @@ static ubig *fib_sequence(long long k)
     destroy_ubig(a);
     destroy_ubig(b);
     return c;
-}
-
-/**
- * fib_to_string() - Convert the k-th Fibonacci number into string.
- * @buf: Buffer where the resulting string will be stored.
- * @buf_sz: Size of the buffer.
- * @fib: Pointer to the Fibonacci number data.
- *
- * Return: The start position (offset) of the @fib string.
- */
-int fib_to_string(char *buf, int buf_sz, ubig *fib)
-{
-    memset(buf, '0', buf_sz);
-    buf[buf_sz - 1] = '\0';
-    int index = fib->size - 1;
-    while (index >= 0 && !fib->cell[index])
-        index--;
-    if (index == -1) {
-        return buf_sz - 2;
-    }
-
-    for (int i = index; i >= 0; i--) {
-        for (unsigned long long mask = 0x8000000000000000ULL; mask;
-             mask >>= 1) {
-            int carry = ((fib->cell[i] & mask) != 0);
-            for (int j = buf_sz - 2; j >= 0; j--) {
-                buf[j] += buf[j] - '0' + carry;
-                carry = (buf[j] > '9');
-                if (carry)
-                    buf[j] -= 10;
-            }
-        }
-    }
-
-    int offset = 0;
-    while (buf[offset] == '0')
-        offset++;
-    return (buf[offset] == '\0') ? (offset - 1) : offset;
 }

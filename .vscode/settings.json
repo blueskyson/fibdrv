@@ -1,9 +1,7 @@
 {
     "files.associations": {
-        "unsigned128.h": "c",
-        "kernel.h": "c",
-        "version.h": "c",
-        "slab.h": "c",
-        "unsigned_bignum.h": "c"
+        "adding.h": "c",
+        "fast_doubling.h": "c",
+        "schonhange_strassen.h": "c"
     }
 }
