@@ -14,7 +14,7 @@ The expected goals are:
 - Conducting performance analysis through `perf`
 
 Homework instructions (in Chinese): [https://hackmd.io/@sysprog/linux2022-fibdrv](https://hackmd.io/@sysprog/linux2022-fibdrv)  
-Old version dev blog: [https://jacklinweb.github.io/posts/fibdrv/](https://jacklinweb.github.io/posts/fibdrv/z)
+Old version dev blog: [https://jacklinweb.github.io/posts/fibdrv/](https://jacklinweb.github.io/posts/fibdrv/)
 
 ## Run Test
 
