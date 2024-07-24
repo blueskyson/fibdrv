@@ -50,17 +50,21 @@ static ssize_t fib_read(struct file *file,
                         size_t size,
                         loff_t *offset)
 {
-    struct BigN *fib = fib_sequence(*offset);
-    if (!fib) {  // fail to calculate fib k
-        copy_to_user(buf, "", 1);
-        return 0;
+    /* Check if buffer has enough size */
+    int sz = estimate_size(*offset);
+    if (size < sz * sizeof(unsigned long long)) {
+        return -1;
     }
 
-    char fib_buf[BUFFSIZE];
-    int __offset = fib_to_string(fib_buf, BUFFSIZE, fib);
-    copy_to_user(buf, fib_buf + __offset, BUFFSIZE - __offset);
+    struct BigN *fib = fib_sequence(*offset);
+    if (!fib) {  // fail to calculate fib k
+        return -1;
+    }
+
+    int fib_size = fib->size;
+    copy_to_user(buf, fib->cell, fib->size * sizeof(unsigned long long));
     destroy_ubig(fib);
-    return BUFFSIZE - __offset;
+    return fib_size;
 }
 
 /* write operation is skipped */
